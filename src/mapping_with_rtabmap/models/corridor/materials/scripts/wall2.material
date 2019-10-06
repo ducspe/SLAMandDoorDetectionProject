@@ -1,0 +1,16 @@
+material wallMat/Wall2
+{
+	receive_shadows off
+	technique
+	{
+		pass
+		{
+			texture_unit
+			{
+				texture wall2.png
+
+			}
+				
+		}
+	}
+}

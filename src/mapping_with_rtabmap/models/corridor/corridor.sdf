@@ -1,0 +1,152 @@
+<?xml version='1.0'?>
+<sdf version='1.6'>
+  <model name='corridor'>
+    <pose frame=''>-1.055 -2.555 0 0 -0 0</pose>
+    <link name='Wall_0'>
+      <collision name='Wall_0_Collision'>
+        <geometry>
+          <box>
+            <size>12.5 0.15 1.8</size>
+          </box>
+        </geometry>
+        <pose frame=''>0 0 1.25 0 -0 0</pose>
+      </collision>
+      <visual name='Wall_0_Visual'>
+        <pose frame=''>0 0 1.25 0 -0 0</pose>
+        <geometry>
+          <box>
+            <size>12.5 0.15 1.8</size>
+          </box>
+        </geometry>
+        <material>
+			    <script>
+				<uri>model://corridor/materials/scripts</uri>
+				<uri>model://corridor/materials/textures</uri>
+				<name>wallMat/Wall0</name>
+			    </script>
+			</material>
+        <meta>
+          <layer>0</layer>
+        </meta>
+      </visual>
+      <pose frame=''>0 1.425 0 0 -0 0</pose>
+    </link>
+    <link name='Wall_1'>
+      <collision name='Wall_1_Collision'>
+        <geometry>
+          <box>
+            <size>3 0.15 1.8</size>
+          </box>
+        </geometry>
+        <pose frame=''>0 0 1.25 0 -0 0</pose>
+      </collision>
+      <visual name='Wall_1_Visual'>
+        <pose frame=''>0 0 1.25 0 -0 0</pose>
+        <geometry>
+          <box>
+            <size>3 0.15 1.8</size>
+          </box>
+        </geometry>
+        <material>
+			    <script>
+				<uri>model://corridor/materials/scripts</uri>
+				<uri>model://corridor/materials/textures</uri>
+				<name>wallMat/Wall1</name>
+			    </script>
+			</material>
+        <meta>
+          <layer>0</layer>
+        </meta>
+      </visual>
+      <pose frame=''>-6.175 0 0 0 0 -1.5708</pose>
+    </link>
+    <link name='Wall_2'>
+      <collision name='Wall_2_Collision'>
+        <geometry>
+          <box>
+            <size>2.5 0.15 1.8</size>
+          </box>
+        </geometry>
+        <pose frame=''>0 0 1.25 0 -0 0</pose>
+      </collision>
+      <visual name='Wall_2_Visual'>
+        <pose frame=''>0 0 1.25 0 -0 0</pose>
+        <geometry>
+          <box>
+            <size>2.5 0.15 1.8</size>
+          </box>
+        </geometry>
+        <material>
+			    <script>
+				<uri>model://corridor/materials/scripts</uri>
+				<uri>model://corridor/materials/textures</uri>
+				<name>wallMat/Wall2</name>
+			    </script>
+			</material>
+        <meta>
+          <layer>0</layer>
+        </meta>
+      </visual>
+      <pose frame=''>-5 -1.425 0 0 -0 0</pose>
+    </link>
+    <link name='Wall_3'>
+      <collision name='Wall_3_Collision'>
+        <geometry>
+          <box>
+            <size>1 0.15 1.8</size>
+          </box>
+        </geometry>
+        <pose frame=''>0 0 1.25 0 -0 0</pose>
+      </collision>
+      <visual name='Wall_3_Visual'>
+        <pose frame=''>0 0 1.25 0 -0 0</pose>
+        <geometry>
+          <box>
+            <size>1 0.15 1.8</size>
+          </box>
+        </geometry>
+        <material>
+			    <script>
+				<uri>model://corridor/materials/scripts</uri>
+				<uri>model://corridor/materials/textures</uri>
+				<name>wallMat/Wall3</name>
+			    </script>
+			</material>
+        <meta>
+          <layer>0</layer>
+        </meta>
+      </visual>
+      <pose frame=''>-3.825 -1 0 0 -0 1.5708</pose>
+    </link>
+    <link name='Wall_4'>
+      <collision name='Wall_4_Collision'>
+        <geometry>
+          <box>
+            <size>10 0.15 1.8</size>
+          </box>
+        </geometry>
+        <pose frame=''>0 0 1.25 0 -0 0</pose>
+      </collision>
+      <visual name='Wall_4_Visual'>
+        <pose frame=''>0 0 1.25 0 -0 0</pose>
+        <geometry>
+          <box>
+            <size>10 0.15 1.8</size>
+          </box>
+        </geometry>
+        <material>
+			    <script>
+				<uri>model://corridor/materials/scripts</uri>
+				<uri>model://corridor/materials/textures</uri>
+				<name>wallMat/Wall4</name>
+			    </script>
+			</material>
+        <meta>
+          <layer>0</layer>
+        </meta>
+      </visual>
+      <pose frame=''>1.1 -0.575 0 0 -0 0</pose>
+    </link>
+    <static>1</static>
+  </model>
+</sdf>

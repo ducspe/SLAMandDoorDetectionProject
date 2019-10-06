@@ -1,0 +1,7 @@
+<launch>
+  <node name="tfsensors" pkg="tinkerforge_sensors" type="tinkerforge_sensors_node" output="screen">
+    <rosparam param="UID_to_Topic">
+      6wViuNa : 'imu_v2'
+    </rosparam>
+  </node>
+</launch>

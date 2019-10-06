@@ -1,0 +1,3 @@
+<launch>
+    <node name="reporter" pkg="reporter" type="reporter" />
+</launch>

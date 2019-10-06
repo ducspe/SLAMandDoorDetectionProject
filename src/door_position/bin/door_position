@@ -1,0 +1,148 @@
+#! /usr/bin/env python
+
+import rospy
+from sensor_msgs.msg import Image
+from sensor_msgs.msg import LaserScan
+from geometry_msgs.msg import Transform
+from std_msgs.msg import Header
+from cv_bridge import CvBridge
+import cv2
+from door_detector.msg import BoundingBox
+from door_detector.msg import Detection
+from door_position.msg import DoorList
+from door_position.msg import DoorPose
+from door_position.msg import Door
+import message_filters
+from door_pose_calculation.door_pose_calculation import Door_Position
+
+publisher_reporter = None
+publisher_store = None
+
+def convert_img(img_msg, channel = 'bgr8'):
+    bridge = CvBridge()
+    return bridge.imgmsg_to_cv2(img_msg, channel)
+
+
+def resize_img(img):
+    return cv2.resize(img, (608, 608), interpolation=cv2.INTER_AREA)
+
+
+def crop_img(img):
+    # Calculate cropping
+    width, height, _ = img.shape
+    min_side_length = min(width, height)
+    start_point_for_cropping = (width - min_side_length) / 2
+    return img[:, start_point_for_cropping: (start_point_for_cropping + min_side_length)]
+
+
+def process_data(color_img_message, detection_results, laser_scan_ray):
+
+    global publisher_reporter
+
+    # TODO: Clear this if this node is reaching production
+    print("Received information!")
+
+    color_img = convert_img(color_img_message)
+    color_img = resize_img(color_img)
+    laser_scan_ray = laser_scan_ray.ranges
+    # bounding_box, rgb_image, range)
+    for bounding_box in detection_results.bounding_boxes:
+        door_position = Door_Position(bounding_box=bounding_box.box, rgb_image=color_img, range=laser_scan_ray)
+        try:
+            door_position = door_position.calculate_door_position()
+            distance = door_position.calculate_depth_distance()
+            status = bounding_box.class_str
+            publish_detection_pose(door_position, distance, status)
+            # TODO: Define threshold when to store the value
+        except:
+            continue
+
+    doors_data = collect_door_list()
+    publish_door_list(publisher_reporter, doors_data)
+
+
+def dummy_camera_to_world_transform(door_position, detection_location):
+    return door_position + detection_location
+
+
+def collect_door_list():
+
+    doors_data = [{
+          'doorId': 1,
+          'position': [3.4, 0.2, 4.3],
+          'status': 'closed'
+        },
+        {
+          'doorId': 2,
+          'position': [3.2, 0.5, 4.0],
+          'status': 'closed'
+        },
+        {
+          'doorId': 3,
+          'position': [1.2, 5.3, 1.3],
+          'status': 'open'
+        }]
+
+    return doors_data
+
+
+def publish_detection_pose(door_position, depth_distance, status):
+
+    global publisher_store
+
+    door_position_msg = DoorPosition()
+    door_position_msg.position = door_position
+    door_position_msg.distance = depth_distance
+    door_position_msg.status = status
+
+    print('Publish door position')
+    publisher_store.publish(door_position_msg)
+    print('Published!')
+
+
+def publish_door_list(publisher_reporter, doors_data):
+
+    door_list = []
+    print('Build door list message')
+    for door_data in doors_data:
+        door = Door()
+        door.id = float(door_data['doorId'])
+        door.position = str(door_data['position'])
+        door.status = str(door_data['status'])
+        door_list.append(door)
+
+    print('Publish door list')
+    publisher_reporter.publish(door_list)
+    print('Published!')
+
+    return
+
+
+if __name__ == '__main__':
+
+    global publisher_reporter
+    global publisher_store
+
+    rospy.init_node('door_position')
+
+
+    color_img_topic = rospy.get_param('~color_image_topic', '/kinect2/qhd/image_color_rect')
+    detector_topic = rospy.get_param('~detector_topic', '/benstiller/door_detector')
+    laser_scanner_topic = rospy.get_param('~laser_scanner_topic', '/filtered_scan')
+
+    color = message_filters.Subscriber(color_img_topic, Image, queue_size=1)
+    detector = message_filters.Subscriber(detector_topic, Detection, queue_size=1)
+    laser_scan = message_filters.Subscriber(laser_scanner_topic, LaserScan, queue_size=1)
+
+    ts = message_filters.TimeSynchronizer([color, detector, laser_scan], queue_size=10)
+    ts.registerCallback(process_data)
+
+
+    publish_reporter_topic = rospy.get_param('~publish_reporter_topic', '/benstiller/door_position')
+    publisher_reporter = rospy.Publisher(publish_reporter_topic, DoorList, queue_size=1)
+
+    publish_store_topic = rospy.get_param('~publish_store_topic', '/benstiller/store/detection_pose')
+    publisher_store = rospy.Publisher(publish_store_topic, DoorList, queue_size=1)
+
+    print('node door_position has started. Waiting for messages to be delivered')
+    rospy.spin()

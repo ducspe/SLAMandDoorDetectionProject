@@ -1,0 +1,6 @@
+If Kinect cannot be accessed, run:
+cd libfreenect2/platform/
+sudo cp ../platform/linux/udev/90-kinect2.rules /etc/udev/rules.d/
+
+
+Also pay attention to the fact that CMakeLists.txt sets the system to search for freenect2 in $HOME 

@@ -1,0 +1,115 @@
+#! /usr/bin/env python
+
+"""
+The purpose of this file is to
+1) instantiate the classifier node,
+2) listen to a dedicated ROS image event,
+3) pre process the incoming ROS Image message,
+4) classify the objects in the image using the classifier,
+5) publish_detection the outcome of the classifier into a dedicated ROS topic
+"""
+import rospy
+from sensor_msgs.msg import Image
+from std_msgs.msg import Header
+from detector.yolo import YOLO
+from cv_bridge import CvBridge
+import cv2
+from PIL import Image as PIL_Image
+import numpy as np
+from door_detector.msg import BoundingBox
+from door_detector.msg import Detection
+
+# Global variable to access to the same in multithreading
+color_image = PIL_Image.new('RGB', (1080, 1080))
+timestamp = None
+
+args = {
+    "model_path": '/home/student/catkin_ws/src/door_detector/src/detector/model/weights.h5',
+    "anchors_path": '/home/student/catkin_ws/src/door_detector/src/detector/model/anchors.txt',
+    "classes_path": '/home/student/catkin_ws/src/door_detector/src/detector/model/classes.txt',
+    "score": 0.8,
+    "iou": 0.0,
+    "model_image_size": (608, 608),
+    "gpu_num": 1,
+}
+
+bridge = CvBridge()
+
+
+def publish_detection(publisher, boxes, scores, classes):
+    """
+    Publishes the result of the image classification as String
+    Is triggered via classify_image() method
+    :param publisher:
+    :param classification_output: The output of the classifier
+    :return: void
+    """
+    detections = []
+
+    print('Build bounding box messages')
+    for (box, score, class_str) in zip(boxes, scores, classes):
+        bounding_box = BoundingBox()
+        bounding_box.box = map(float, box)
+        bounding_box.score = float(score)
+        bounding_box.class_str = str(class_str)
+        detections.append(bounding_box)
+
+    header = Header()
+    header.stamp = timestamp
+
+    print('Publish detection')
+    publisher.publish(header, detections)
+    print('Published!')
+
+
+def publish_image(publisher, cv2_image):
+    print('Convert detection image')
+    img_msg = bridge.cv2_to_imgmsg(cv2_image, 'bgr8')
+    print('Publish detection image')
+    publisher.publish(img_msg)
+    print('Published!')
+
+
+def preprocess_data(image_message):
+    global color_image
+    global timestamp
+
+    bridge = CvBridge()
+    cv2_img = bridge.imgmsg_to_cv2(image_message, 'bgr8')
+    pil_image = cv2.cvtColor(cv2_img, cv2.COLOR_BGR2RGB)
+    color_image = PIL_Image.fromarray(pil_image)
+    timestamp = image_message.header.stamp
+
+
+if __name__ == '__main__':
+
+    rospy.init_node('door_detector')
+
+    color_img_topic = rospy.get_param('~kinect_topic', '/kinect2/qhd/image_color_rect')
+    rospy.Subscriber(color_img_topic, Image, preprocess_data)
+
+    detection_topic = rospy.get_param('~detection_topic', '/benstiller/door_detector')
+    detection_image_topic = rospy.get_param('~detection_image_topic', '/benstiller/door_detector/image')
+
+    print('Register Publisher')
+    publisher_detection = rospy.Publisher(detection_topic, Detection, queue_size=1)
+    publisher_image = rospy.Publisher(detection_image_topic, Image, queue_size=1)
+
+    # Start listener
+    try:
+        print('Start YOLO...')
+        yolo = YOLO(**args)
+        while not rospy.is_shutdown():
+            print('Run detection...')
+            r_image, out_boxes, out_scores, out_classes = yolo.detect_image(color_image)
+            print('Got detection. Convert it to CV2 image format...')
+            cv2_image = cv2.cvtColor(np.array(r_image), cv2.COLOR_RGB2BGR)
+            print('Publish detection...')
+            publish_detection(publisher_detection, out_boxes, out_scores, out_classes)
+            print('Publish detected image...')
+            publish_image(publisher_image, cv2_image)
+        print('Closing YOLO session...')
+        yolo.close_session()
+
+    except rospy.ROSInterruptException:
+        pass

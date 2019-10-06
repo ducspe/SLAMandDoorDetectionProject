@@ -1,0 +1,14 @@
+<package format="2">
+  <name>webserver</name>
+  <version>0.0.1</version>
+  <description>
+    Instantiates a webserver to make benstiller available in the network.
+  </description>
+  <author>Christian Reichel</author>
+  <maintainer email="c.reichel@me.com">Christian Reichel</maintainer>
+  <license>BSD</license>
+  <url>https://git.informatik.uni-hamburg.de/cv-master-2018/door_detector</url>
+
+  <buildtool_depend>catkin</buildtool_depend>
+  <depend>rospy</depend>
+</package>

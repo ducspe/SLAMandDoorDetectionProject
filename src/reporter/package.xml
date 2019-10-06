@@ -1,0 +1,26 @@
+<package format="2">
+  <name>reporter</name>
+  <version>0.0.1</version>
+  <description>
+    Reports to a server the SLAM map and door classification results.
+  </description>
+  <author>Christian Reichel</author>
+  <maintainer email="c.reichel@me.com">Christian Reichel</maintainer>
+  <license>BSD</license>
+  <url>https://git.informatik.uni-hamburg.de/cv-master-2018/ros_reporter</url>
+
+  <buildtool_depend>catkin</buildtool_depend>
+    <build_depend>rospy</build_depend>
+    <build_depend>sensor_msgs</build_depend>
+    <build_depend>nav_msgs</build_depend>
+    <build_depend>roslaunch</build_depend>
+    <build_depend>message_generation</build_depend>
+    <build_depend>message_runtime</build_depend>
+
+    <exec_depend>rospy</exec_depend>
+    <exec_depend>sensor_msgs</exec_depend>
+    <exec_depend>nav_msgs</exec_depend>
+    <exec_depend>roslaunch</exec_depend>
+    <exec_depend>message_runtime</exec_depend>
+    <exec_depend>message_generation</exec_depend>
+</package>

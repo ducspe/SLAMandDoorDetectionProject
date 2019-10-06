@@ -1,0 +1,33 @@
+Please install the following:
+
+resource: https://github.com/introlab/rtabmap_ros
+sudo apt-get install ros-kinetic-rtabmap-ros
+
+resource: http://wiki.ros.org/teleop_twist_keyboard
+sudo apt-get install ros-kinetic-teleop-twist-keyboard
+
+resource: http://wiki.ros.org/depthimage_to_laserscan
+sudo apt-get install ros-kinetic-depthimage-to-laserscan
+
+resource: http://wiki.ros.org/navigation
+sudo apt-get install ros-kinetic-navigation
+
+//-----------------------------------------------------------------
+
+Stuff to note in case we have any problems in the future:
+I fiddled with the static transformations in the launch file ("pioneer_sim_rtabmap.launch") and the rtabmap_ros node as well
+
+And in the "ua_ros_p3dx/p3dx_description/urdf/pioneer3dx.gazebo" I set:
+<legacyModeNS>true</legacyModeNS>
+<legacyMode>true</legacyMode>
+
+//-----------------------------------------------------------------
+
+Steps to setup the gazebo and rviz:
+Execute "export GAZEBO_MODEL_PATH=~/catkin_ws/src/models"
+Launch a terminal and execute "roslaunch pioneer_sim_rtabmap.launch" after you cd to kinect/kinect/launch
+Open another terminal and execute "rviz rviz -d rviz.rviz" after you cd to kinect/kinect/config
+
+//-----------------------------------------------------------------
+For real robot follow this tutorial
+rosdep install rosaria

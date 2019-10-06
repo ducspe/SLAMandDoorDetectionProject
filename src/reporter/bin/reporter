@@ -1,0 +1,184 @@
+#! /usr/bin/env python
+import rospy
+from sensor_msgs.msg import Image
+from nav_msgs.msg import OccupancyGrid
+from door_position.msg import DoorList
+from nav_msgs.msg import Odometry
+from cv_bridge import CvBridge
+import numpy as np
+import requests
+from helpers.helpers import encode_image
+import copy
+import cv2
+
+
+def is_server_online(url):
+    try:
+        r = requests.head(url)
+        return r.status_code == 200
+    except:
+        return False
+
+
+class Map:
+
+    def __init__(self, map_message):
+        self.data = map_message.data
+        self.height = map_message.info.height
+        self.width = map_message.info.width
+        self.origin = np.abs([map_message.info.origin.position.x, map_message.info.origin.position.y])
+        self.resolution = map_message.info.resolution
+        self.pixel_origin = np.abs((1 / self.resolution) * np.array([self.origin[1], self.origin[0]]))
+        self.image = None
+
+        self.convert_data_to_image()
+
+    def convert_data_to_image(self):
+        map_data = np.array(self.data)
+
+        # Setup colors
+        map_data[map_data == -1] = 200
+        map_data[map_data == 0] = 255
+        map_data[map_data == 100] = 0
+
+        # reshape array to 2D matrix
+        map_data = np.reshape(map_data, (-1, self.width))
+
+        # make RGB image out of it
+        map_image = np.zeros([self.height, self.width, 3], dtype=np.uint8)
+        map_image[:, :, 0] = map_data
+        map_image[:, :, 1] = map_data
+        map_image[:, :, 2] = map_data
+
+        # rotate the map
+        self.image = map_image
+
+    def draw_into_map(self, position_in_meter, color='red', size=1):
+        assert self.image is not None, "No map image given. Can't draw onto map!"
+
+        if color == 'red':
+            color_code = [0, 0, 255]
+        elif color == 'green':
+            color_code = [0, 255, 0]
+        elif color == 'blue':
+            color_code = [255, 0, 0]
+        else:
+            color_code = color
+
+        self.image[
+        (np.abs(np.round(position_in_meter[0]).astype(int)) - size): (np.abs(np.round(position_in_meter[0]).astype(int) + size)),
+        (np.abs(np.round(position_in_meter[1]).astype(int)) - size): (np.abs(np.round(position_in_meter[1]).astype(int) + size))
+        ] = color_code
+
+    def meters_to_pixels(self, position_in_meter):
+        return (1 / self.resolution) * position_in_meter
+
+    def to_image(self):
+        return cv2.flip(self.image, 1)
+
+
+class Report:
+    """
+    The report contains
+    - the map image,
+    - the fused map image (contains location of robot, as well as locations and statuses of doors),
+    - the robot location,
+    - the list of doors, as well as
+    - the detection result as image.
+
+    This class in particular can process the separated ROS messages and sends a combined report via REST to the backend.
+    """
+
+    def __init__(self):
+        self.robot_location = None
+        self.door_list = None
+        self.detection_image = None
+        self.map = None
+        self.annotated_map = None
+        self.robot_to_map_location = None
+        self.robot_to_map_location__pixel = None
+
+    def process_map_message(self, message):
+        self.map = Map(message)
+
+    def process_detection_image_message(self, message):
+        bridge = CvBridge()
+
+        self.detection_image = np.array(bridge.imgmsg_to_cv2(message, 'bgr8'))
+
+    def process_door_list(self, message):
+        self.door_list = message.data
+
+    def process_robot_location(self, message):
+        if self.map is None:
+            return
+        print('Got new robot location: {}'.format([message.pose.pose.position.x, message.pose.pose.position.y]))
+        self.robot_location = [message.pose.pose.position.x, message.pose.pose.position.y]
+        self.robot_to_map_location = self.map.origin + np.array(self.robot_location)
+        self.robot_to_map_location__pixel = self.map.meters_to_pixels(self.robot_to_map_location)
+        self.send_report()
+
+    def process_map_and_location_message(self, map_message, location_message):
+        assert map_message.header.stamp == location_message.header.stamp, "Time stamps of map and robot location are not equal."
+
+        self.process_map_message(map_message)
+        self.process_robot_location(location_message)
+        self.send_report()
+
+    def make_annotated_map(self):
+        assert self.robot_to_map_location__pixel is not None, "Robot to map location in pixel not given. Cannot proceed annotating the map."
+
+        annotated_map = copy.copy(self.map)
+        annotated_map.draw_into_map([self.robot_to_map_location__pixel[1], self.robot_to_map_location__pixel[0]], color='red', size=2)
+        annotated_map.draw_into_map(annotated_map.pixel_origin, color='green')
+
+        self.annotated_map = annotated_map
+
+    def send_report(self):
+
+        if self.map is None or \
+                self.robot_location is None:
+            return
+
+        # Prepare the annotated map
+        self.make_annotated_map()
+
+        message = {}
+        if self.detection_image is not None:
+            message['detectionImage'] = encode_image(self.detection_image, 'png')
+
+        if self.map is not None:
+            message['mapImage'] = encode_image(self.annotated_map.to_image(), 'png')
+
+        if self.annotated_map is not None:
+            message['annotatedMapImage'] = encode_image(self.annotated_map.to_image(), 'png')
+
+        if self.door_list is not None:
+            message['doorList'] = self.door_list
+
+        if self.robot_location is not None:
+            message['robotLocation'] = self.robot_location
+
+        if is_server_online('http://0.0.0.0:5000/'):
+            request = requests.post('http://0.0.0.0:5000/' + 'report/', json=message)
+
+            print(request)
+
+
+if __name__ == '__main__':
+    rospy.init_node('reporter')
+
+    # Params
+    robot_location_topic = rospy.get_param('~robot_location_topic', '/odometry/filtered')
+    map_topic = rospy.get_param('~map_topic', '/map')
+    detection_topic = rospy.get_param('~detection_topic', '/benstiller/door_detector/image')
+    door_report_topic = rospy.get_param('~door_report_topic', '/benstiller/door_positions/list')
+
+    report = Report()
+
+    rospy.Subscriber(map_topic, OccupancyGrid, report.process_map_message, queue_size=1, tcp_nodelay=True)
+    rospy.Subscriber(robot_location_topic, Odometry, report.process_robot_location, queue_size=1, tcp_nodelay=True)
+    rospy.Subscriber(detection_topic, Image, report.process_detection_image_message, queue_size=1, tcp_nodelay=True)
+    rospy.Subscriber(door_report_topic, DoorList, report.process_door_list, queue_size=1, tcp_nodelay=True)
+
+    rospy.spin()

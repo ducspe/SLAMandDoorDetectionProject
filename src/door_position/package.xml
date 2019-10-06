@@ -1,0 +1,28 @@
+<package format="2">
+    <name>door_position</name>
+    <version>0.0.1</version>
+    <description>
+        Calculates the pose of the door through geometrical mathematics.
+    </description>
+    <author>Christian Reichel</author>
+    <maintainer email="c.reichel@me.com">Christian Reichel</maintainer>
+    <license>BSD</license>
+    <url>https://git.informatik.uni-hamburg.de/cv-master-2018/ros_door_localization</url>
+
+    <buildtool_depend>catkin</buildtool_depend>
+    <build_depend>rospy</build_depend>
+    <build_depend>sensor_msgs</build_depend>
+    <build_depend>std_msgs</build_depend>
+    <build_depend>geometry_msgs</build_depend>
+    <build_depend>door_detector</build_depend>
+    <build_depend>message_generation</build_depend>
+    <build_depend>message_runtime</build_depend>
+
+    <exec_depend>rospy</exec_depend>
+    <exec_depend>sensor_msgs</exec_depend>
+    <exec_depend>std_msgs</exec_depend>
+    <exec_depend>geometry_msgs</exec_depend>
+    <exec_depend>message_runtime</exec_depend>
+    <exec_depend>message_generation</exec_depend>
+    <exec_depend>door_detector</exec_depend>
+</package>

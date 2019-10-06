@@ -1,0 +1,3 @@
+<launch>
+    <node name="door_detector" pkg="door_detector" type="door_detector" args="_show_classification_window:=False" />
+</launch>
